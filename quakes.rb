@@ -2,8 +2,11 @@ Bundler.require
 
 # TODO: Create a YAML config file
 configure do
-  MongoMapper.setup({'production' => {'uri' => ENV['MONGOLAB_URI']}}, 'production')
-  MongoMapper.setup({'development' => {'uri' => 'mongodb://localhost/quaker'}}, 'development')
+  if ENV['MONGOLAB_URI'] then
+    MongoMapper.setup({'production' => {'uri' => ENV['MONGOLAB_URI']}}, 'production')
+  else
+    MongoMapper.setup({'development' => {'uri' => 'mongodb://localhost/quaker'}}, 'development')
+  end
 end
 
 get '/' do
