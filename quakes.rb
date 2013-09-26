@@ -46,3 +46,19 @@ end
 get '/' do
   "Hello, world!"
 end
+
+get '/quakes' do
+  content_type :json
+
+  count = 10
+  look_back = 10
+
+  if params[:count] then
+    count = params[:count].to_i
+  end
+  if params[:days] then
+    look_back = params[:days].to_i
+  end
+
+  Place.where(:time.gte => look_back.days.ago).sort(:mag.desc).limit(count).to_json(:only => [:location, :mag, :place, :time])
+end
