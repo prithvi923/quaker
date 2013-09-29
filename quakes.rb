@@ -11,6 +11,7 @@ get '/quakes' do
 
   count = 10
   days = 10
+  wantsRegion = false
 
   if params[:count] then
     count = params[:count].to_i
@@ -18,8 +19,18 @@ get '/quakes' do
   if params[:days] then
     days = params[:days].to_i
   end
+  if params[:region] == "true" || params[:region] == "false" then
+    wantsRegion = params[:region]
+  end
   days_ago = Time.now() - 3600*24*days
-  if params[:region] then
+
+  hash = count.to_s + days.to_s + wantsRegion.to_s
+
+  if $redis.get(hash) then
+    return $redis.get(hash)
+  end
+
+  if wantsRegion then
     places = repository(:default).adapter.select(
       "SELECT p2place AS place, time, p2lat AS lat, p2lon AS lon, p2mag AS mag, AVG(p1mag) AS avg_mag
       FROM (SELECT p1.mag AS p1mag, p1.place AS p1place, p1.lat AS p1lat, p1.lon AS p1lon, p2.mag AS p2mag, p2.place AS p2place, p2.lat AS p2lat, p2.lon AS p2lon, p2.time, (3959 * acos( cos( radians(p1.lat) ) * cos( radians( p2.lat ) ) * cos( radians( p2.lon ) - radians(p1.lon) ) + sin( radians(p1.lat) ) * sin( radians( p2.lat ) ) ) ) AS distance
@@ -31,8 +42,11 @@ get '/quakes' do
       LIMIT 0, #{count};"
     )
     places.map! { |place| Hash[place.members.zip(place.values)]}
-    places.to_json
+    res = places.to_json
   else
-    Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count).to_json
+    res = Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count).to_json
   end
+
+  $redis.set(hash, res)
+  return res
 end
