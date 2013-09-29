@@ -1,7 +1,21 @@
 Bundler.require
 
-# TODO: Place in separate file potentially
-DataMapper.setup(:default, ENV['CLEARDB_DATABASE_URL'] || 'mysql://root@localhost/quaker')
+configure do
+  DataMapper.setup(:default, ENV['CLEARDB_DATABASE_URL'] || 'mysql://root@localhost/quaker')
+end
+
+# TODO: Create separate model file
+class Place
+  include DataMapper::Resource
+
+  property :mag,     Float
+  property :place,   String
+  property :time,    Time, :key => true
+  property :lat,     Float, :key => true
+  property :lon,     Float, :key => true
+
+end
+
 DataMapper.auto_upgrade!
 
 # TODO: Place in separate file potentially
