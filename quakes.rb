@@ -1,17 +1,6 @@
 Bundler.require
-
-class Place
-  include DataMapper::Resource
-
-  property :mag,     Float
-  property :place,   String
-  property :time,    Time, :key => true
-  property :lat,     Float, :key => true
-  property :lon,     Float, :key => true
-end
-
-DataMapper.setup(:default, ENV['CLEARDB_DATABASE_URL'] || 'mysql://root@localhost/quaker')
-DataMapper.auto_upgrade!
+require_relative 'models/init'
+require_relative 'helpers/init'
 
 get '/' do
   "Hello, world!"
@@ -45,29 +34,5 @@ get '/quakes' do
     places.to_json
   else
     Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count).to_json
-  end
-end
-
-scheduler = Rufus::Scheduler.start_new
-scheduler.every '15m' do
-  update_db
-end
-
-def update_db
-  data = RestClient.get "http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson"
-  data = JSON.parse data
-  features = data["features"]
-  features.each do |feature|
-    begin
-      Place.create({
-          :mag => feature['properties']['mag'],
-          :place => feature['properties']['place'],
-          :time => Time.at(feature['properties']['time']/1000),
-          :lon => feature['geometry']['coordinates'][0], 
-          :lat => feature['geometry']['coordinates'][1]
-        })
-    rescue
-      continue
-    end
   end
 end
