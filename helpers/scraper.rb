@@ -21,4 +21,5 @@ def update_db
       continue
     end
   end
+  $redis.flushall
 end
