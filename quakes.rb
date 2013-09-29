@@ -1,27 +1,22 @@
 Bundler.require
 
-# TODO: Create a YAML config file
 configure do
-  if ENV['MONGOLAB_URI'] then
-    MongoMapper.setup({'production' => {'uri' => ENV['MONGOLAB_URI']}}, 'production')
-  else
-    MongoMapper.setup({'development' => {'uri' => 'mongodb://localhost/quaker'}}, 'development')
-  end
+  DataMapper.setup(:default, ENV['CLEARDB_DATABASE_URL'] || 'mysql://root@localhost/quaker')
 end
 
 # TODO: Create separate model file
 class Place
-  include MongoMapper::Document
+  include DataMapper::Resource
 
-  key :mag,   Float
-  key :place, String
-  key :time, Time
-  key :location, Array
-
-  ensure_index [[:location, '2dsphere']]
-  ensure_index [[:location, 1], [:time, -1]], :unique => true
+  property :mag,     Float
+  property :place,   String
+  property :time,    Time, :key => true
+  property :lat,     Float, :key => true
+  property :lon,     Float, :key => true
 
 end
+
+DataMapper.auto_upgrade!
 
 # TODO: Place in separate file potentially
 scheduler = Rufus::Scheduler.start_new
@@ -34,12 +29,17 @@ def update_db
   data = JSON.parse data
   features = data["features"]
   features.each do |feature|
-    Place.create({
-        :mag => feature['properties']['mag'],
-        :place => feature['properties']['place'],
-        :time => Time.at(feature['properties']['time']/1000),
-        :location => [feature['geometry']['coordinates'][0], feature['geometry']['coordinates'][1]]
-      })
+    begin
+      Place.create({
+          :mag => feature['properties']['mag'],
+          :place => feature['properties']['place'],
+          :time => Time.at(feature['properties']['time']/1000),
+          :lon => feature['geometry']['coordinates'][0], 
+          :lat => feature['geometry']['coordinates'][1]
+        })
+    rescue
+      continue
+    end
   end
 end
 
@@ -51,14 +51,14 @@ get '/quakes' do
   content_type :json
 
   count = 10
-  look_back = 10
+  days = 10
 
   if params[:count] then
     count = params[:count].to_i
   end
   if params[:days] then
-    look_back = params[:days].to_i
+    days = params[:days].to_i
   end
 
-  Place.where(:time.gte => look_back.days.ago).sort(:mag.desc).limit(count).to_json(:only => [:location, :mag, :place, :time])
+  Place.all(:time.gte => Time.now() - 3600*24*days, :order => [:mag.desc], :limit => count).to_json
 end
