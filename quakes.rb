@@ -1,4 +1,5 @@
 Bundler.require
+require_relative 'db/init'
 require_relative 'models/init'
 require_relative 'helpers/init'
 
