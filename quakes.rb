@@ -3,6 +3,11 @@ require_relative 'db/init'
 require_relative 'models/init'
 require_relative 'helpers/init'
 
+configure do
+  DataMapper.setup(:default, ENV['CLEARDB_DATABASE_URL'] || 'mysql://root@localhost/quaker')
+  DataMapper.auto_upgrade!
+end
+
 get '/' do
   "Hello, world!"
 end
