@@ -42,7 +42,7 @@ get '/quakes' do
       LIMIT 0, #{count};"
     )
     places.map! { |place| Hash[place.members.zip(place.values)]}
-    res = places.to_json
+    res = places.each { |place| place.delete(:avg_mag) }.to_json
   else
     res = Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count).to_json
   end
