@@ -2,27 +2,48 @@ class MyQuaker < Sinatra::Application
   get '/quakes' do
     content_type :json
 
-    count = 10
-    days = 10
-    wantsRegion = false
+    badParams = false
+    res = Hash.new
 
-    if params[:count] then
-      count = params[:count].to_i
+    begin
+      count = params[:count] ? Integer(params[:count]) : 10
+    rescue ArgumentError
+      count = 10
+      badParams = true
     end
-    if params[:days] then
-      days = params[:days].to_i
-    end
-    if params[:region] == "true" || params[:region] == "false" then
-      wantsRegion = params[:region]
-    end
-    days_ago = Time.now() - 3600*24*days
 
-    hash = count.to_s + days.to_s + wantsRegion.to_s
+    begin
+      days = params[:days] ? Integer(params[:days]) : 10
+    rescue ArgumentError
+      days = 10
+      badParams = true
+    ensure
+      days_ago = Time.now() - 3600*24*days
+    end
+
+    begin
+      wantsRegion = params[:region] ? to_boolean(params[:region]) : false
+    rescue ArgumentError
+      wantsRegion = false
+      badParams = true
+    end
+
+    res["status"] = badParams ? "error: bad parameter(s) given; defaults used" : "ok"
+    hash = "c" + count.to_s + "d" + days.to_s + wantsRegion.to_s
 
     if $redis.get(hash) then
-      return $redis.get(hash)
+      res["payload"] = JSON.parse $redis.get(hash)
+      return res.to_json
     end
 
+    payload = get_payload(count, days_ago, wantsRegion)
+
+    $redis.set(hash, payload.to_json)
+    res["payload"] = payload
+    return res.to_json
+  end
+
+  def get_payload(count, days_ago, wantsRegion)
     if wantsRegion then
       places = repository(:default).adapter.select(
         "SELECT p2place AS place, time, p2lat AS lat, p2lon AS lon, p2mag AS mag, AVG(p1mag) AS avg_mag
@@ -35,12 +56,15 @@ class MyQuaker < Sinatra::Application
         LIMIT 0, #{count};"
       )
       places.map! { |place| Hash[place.members.zip(place.values)]}
-      res = places.each { |place| place.delete(:avg_mag) }.to_json
+      places.each { |place| place.delete(:avg_mag) }
     else
-      res = Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count).to_json
+      Place.all(:time.gte => days_ago, :order => [:mag.desc], :limit => count) 
     end
+  end
 
-    $redis.set(hash, res)
-    return res
+  def to_boolean(str)
+    return true if str.downcase == "true"
+    return false if str.downcase == "false"
+    raise ArgumentError
   end
 end
