@@ -1,4 +1,4 @@
-class MyApp < Sinatra::Application
+class MyQuaker < Sinatra::Application
   get '/' do
     "Hello, world!"
   end
