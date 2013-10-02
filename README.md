@@ -47,4 +47,6 @@ Visit <a>http://localhost:8000/quakes</a>!
 
 Demo
 --------
-There is also a live demo of this app at <a>http://myquaker.herokuapp.com/quakes</a>
+There is also a live demo of this app at <a>http://myquaker.herokuapp.com/quakes</a>.
+
+A visualization of this ```/quakes``` endpoint exists at <a>http://myquaker.herokuapp.com/</a>.
