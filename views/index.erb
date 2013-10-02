@@ -9,13 +9,19 @@
       function drawMarkersMap() {
         $.getJSON( "quakes", function( data ) {
           var payload = data["payload"];
-          var items = [['Latitude', 'Longitude', 'Magnitude']];
+          var items = [];
 
           $.each( payload, function( index, place ) {
-            items.push([place.lat, place.lon, place.mag]);
+            items.push([place.lat, place.lon, place.place, place.mag]);
           });
 
-          var data = google.visualization.arrayToDataTable(items);
+          var data = new google.visualization.DataTable();
+          data.addColumn('number', 'Latitude');
+          data.addColumn('number', 'Longitude');
+          data.addColumn('string', 'Description');
+          data.addColumn('number', 'Magnitude');
+
+          data.addRows(items);
 
           var options = {
             displayMode: 'markers',
