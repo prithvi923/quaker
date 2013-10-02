@@ -1,0 +1,34 @@
+<html>
+  <head>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" ></script>
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <script type='text/javascript'>
+      google.load('visualization', '1', {'packages': ['geochart']});
+      google.setOnLoadCallback(drawMarkersMap);
+
+      function drawMarkersMap() {
+        $.getJSON( "quakes", function( data ) {
+          var payload = data["payload"];
+          var items = [['Latitude', 'Longitude', 'Magnitude']];
+
+          $.each( payload, function( index, place ) {
+            items.push([place.lat, place.lon, place.mag]);
+          });
+
+          var data = google.visualization.arrayToDataTable(items);
+
+          var options = {
+            displayMode: 'markers',
+            colorAxis: {colors: ['yellow', 'red']}
+          };
+
+          var chart = new google.visualization.GeoChart(document.getElementById('chart_div'));
+          chart.draw(data, options);
+        });
+      };
+    </script>
+  </head>
+  <body>
+    <div id="chart_div"></div>
+  </body>
+</html>

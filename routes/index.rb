@@ -1,5 +1,5 @@
 class MyQuaker < Sinatra::Application
   get '/' do
-    "Hello, world!"
+    erb :index
   end
 end
